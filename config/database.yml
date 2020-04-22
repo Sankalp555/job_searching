@@ -1,0 +1,17 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  username: postgres
+  password: postgres
+  host: localhost
+
+development:
+  <<: *default
+  database: job_search
+
+test:
+  <<: *default
+  database: job_search_test
+
+production:
+  <<: *default
