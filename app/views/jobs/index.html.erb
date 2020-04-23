@@ -45,6 +45,35 @@
   padding: 40px;
   border-radius: 10px;
 }
+.jobs{
+  height: 300px;
+  overflow-y: auto;
+}
+.loader {
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #3498db;
+  width: 120px;
+  height: 120px;
+  margin-top: 20px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.center {
+  margin: auto;
+  padding: 10px;
+}
 </style>
 <div class="container">
   <h1 class="mt-4">Jobs</h1>
@@ -67,23 +96,68 @@
     </div>
   </div>
   <hr>
-  <div class="row">
+  <div class="row jobs">
+    <span id="next_cursor" style="display: none;"><%= @job_data["next_cursor"]%></span>
     <% @job_data["job_data"].each do |job_data| %>
       <div class="column">
         <div class="card">
           <h4 title="<%=job_data["job_title"] %>" style="cursor: pointer;"><%=h truncate(job_data["job_title"], :length => 10) %></h4>
           <p><b>Description: </b><%=h truncate(job_data["job_description"], :length => 80) %></p>
           <p><b>Location: </b><%= job_data["country"]%>, <%= job_data["inferred_state"]%>, <%= job_data["city"]%></p>
-          <p><b>Company: </b> <%= job_data["company_name"]%></p>
+          <p><b>Company: </b> <%=h truncate(job_data["company_name"], :length => 10) %></p>
           <p><b>Posted on: </b> <%= job_data["post_date"]%></p>
         </div>
       </div>
     <% end %>
+    <div class="loader center" style="display: none;"></div>
+    <div class="not_fount" style="color: red;"></div>
   </div>
 </div>
 <script type="text/javascript">
-  $('#clear').on('click', function(){
-    $('#job_title').val();
-    $('#company_name').val();
+  // $('#clear').on('click', function(){
+  //   $('#job_title').val();
+  //   $('#company_name').val();
+  // });
+  var scroll_time = 0;
+  $('.jobs').on('scroll', function(event) {
+    if($(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight){
+      //$(this).scrollTop = $(this).scrollHeight;
+      load_more_jobs();
+    }
   });
+
+  function load_more_jobs(){
+    next_cursor = $('#next_cursor').text();
+    company_name = $('#company_name').val();
+    job_title = $('#job_title').val();
+    $('.loader').css('display','block');
+    $.ajax({
+      url: "/jobs",
+      type: "get",
+      data: {next_cursor: next_cursor, job_title: job_title, company_name: company_name, request_type: 'json'},
+      success: function(data) {
+        if(data["data"]["job_data"].length > 1 ){
+          $('.loader').css('display', 'none');
+          $('#next_cursor').replaceWith('<span id="next_cursor" style="display: none;">'+data["data"]["next_cursor"]+'</span>');
+        }else{
+          $('.loader').css('display','none');
+          $('.not_fount').text("No record found!");
+        }
+        $.each(data["data"]["job_data"], function( index, value ) {
+          $(".jobs").append('<div class="column">\
+            <div class="card">\
+              <h4 title="'+data["data"]["job_data"][index]["job_title"]+'" style="cursor: pointer;">'+data["data"]["job_data"][index]["job_title"].substr(0,10)+'</h4>\
+              <p><b>Description: </b>'+data["data"]["job_data"][index]["job_description"].substr(0,10)+'</p>\
+              <p><b>Location: </b>'+'data["data"]["job_data"][index]["country"]'+', '+data["data"]["job_data"][index]["inferred_state"]+', '+data["data"]["job_data"][index]["city"]+'</p>\
+              <p><b>Company: </b>'+data["data"]["job_data"][index]["company_name"].substr(0,10)+'</p>\
+              <p><b>Posted on: </b>'+data["data"]["job_data"][index]["post_date"]+'</p>\
+            </div>\
+          </div>\
+          ');
+        });
+      },
+      error: function(data) {}
+    });
+    scroll_time=0;
+  }
 </script>
