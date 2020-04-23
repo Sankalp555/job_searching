@@ -3,6 +3,16 @@ class JobsController < ApplicationController
   def index
     require 'net/http'
     require 'uri'
+    job_title = "*"
+    company_name = "*"
+    if (params[:job_title].present? && params[:company_name].present?)
+      job_title = params[:job_title]
+      company_name = params[:company_name]
+    elsif params[:job_title].present?
+      job_title = params[:job_title]
+    elsif params[:company_name].present?
+      company_name = params[:company_name]
+    end
 
     uri = URI.parse("https://api.jobspikr.com/v2/data")
     request = Net::HTTP::Post.new(uri)
@@ -16,13 +26,13 @@ class JobsController < ApplicationController
             {
               query_string: {
                 default_field: "job_title",
-                query: "java developer"
+                query: job_title
               }
             },
             {
               query_string: {
                 default_field: "company_name",
-                query: "accenture" 
+                query: company_name 
               }
             }
           ]
@@ -38,8 +48,10 @@ class JobsController < ApplicationController
     end
     # response.code
     # response.body
-    File.open("public/jobs/jobs.json","w") do |f|
-      f.write(JSON.parse(response.body))
-    end
+    @job_data = JSON.parse(response.body)
+    # debugger
+    # File.open("public/jobs/jobs.json","w") do |f|
+    #   f.write(data)
+    # end
   end
 end
